@@ -2,6 +2,7 @@
 Implementation of the AmbientGAN model as a final project for UCLA's Stat 231B course. 
 
 
+
 We will reproduce Figure 7. This requires implementing a Wasserstein GAN with gradient penalty (WGANGP) with the Block-Pixels and Convolve+Noise measurement models. 
 
 The AmbientGAN model is benchmarked against alternatives:
@@ -18,3 +19,6 @@ Implementation of the models will build on the code contained from the following
 - https://github.com/AshishBora/ambient-gan/blob/master/src/mnist/gen/gan_def.py
 - https://docs.pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 - https://github.com/Zeleni9/pytorch-wgan/blob/master/models/wgan_gradient_penalty.py
+
+Source: 
+Bora, A., Price, E., & Dimakis, A. G. (2018, February). AmbientGAN: Generative models from lossy measurements. In International conference on learning representations.
