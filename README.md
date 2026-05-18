@@ -14,6 +14,15 @@ The AmbientGAN model is benchmarked against alternatives:
     1. Ignore
     2. Unmeasure-weiner
 
+Three models must be trained:
+1. Generator: generates samples from $p_x$
+2. Discriminator
+3. Inception model: obtains conditional label distribution $p(y|\bm x)$
+
+The Generator and Discriminator must be trained for each block probability p or noise sd \sigma. The inception model must be only trained once, and the inception score is used to calcuate the inception score:
+
+$$IS = \exp\left(\mathbb{E}_{x}\left[KL\left(p(y|x) ,|, p(y)\right)\right]\right)$$
+
 Implementation of the models will build on the code contained from the following sources:
 - https://github.com/igul222/improved_wgan_training (WGANGP)
 - https://github.com/AshishBora/ambient-gan/blob/master/src/mnist/gen/gan_def.py
@@ -22,3 +31,5 @@ Implementation of the models will build on the code contained from the following
 
 Source: 
 Bora, A., Price, E., & Dimakis, A. G. (2018, February). AmbientGAN: Generative models from lossy measurements. In International conference on learning representations.
+
+Tim Salimans, Ian Goodfellow, Wojciech Zaremba, Vicki Cheung, Alec Radford, and Xi Chen. Improved techniques for training gans. In Advances in Neural Information Processing Systems, pp. 2234–2242, 2016.
