@@ -1,13 +1,14 @@
 """
 measurements/block_pixels.py
-
 Block-Pixels measurement model from the AmbientGAN paper.
 Each pixel is independently set to zero with probability p.
 """
-
+ 
 import torch
-
-
+from torchvision import transforms
+ 
+ 
 def block_pixels(x, p):
-    mask = torch.bernoulli(torch.ones_like(x) * (1 - p))
-    return x * mask
+    B, C, H, W = x.shape
+    mask = torch.bernoulli(torch.ones(B, 1, H, W, device=x.device) * (1 - p))
+    return x * mask  # broadcasts across C
