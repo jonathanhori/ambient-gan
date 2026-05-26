@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from model import Generator, LATENT_DIM
-from train import sample_latent
+from utils import sample_latent
 
 
 # ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ class MNISTClassifier(nn.Module):
         B = x.shape[0]
         # Two Conv + Pool layers 
         h = self.conv1(x)
-        h = self.conv2(x)
+        h = self.conv2(h)
         # Reshape for Linear
         h = h.view(B, -1)
         # Two fully connected layers
@@ -137,7 +137,7 @@ def train_classifier(save_path: str,
     model = MNISTClassifier().to(device)
 
     # Optimizer
-    opt = torch.optim.Adam(lr = 1e-4)
+    opt = torch.optim.Adam(model.parameters(), lr = 1e-4)
 
     # Loss - Cross entropy between logits and integer class labels
     criterion = nn.CrossEntropyLoss()
