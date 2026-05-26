@@ -138,8 +138,6 @@ def sample_latent(batch_size: int,
     Returns:
         z: (B, latent_dim)
     """
-    # TODO: implement latent sampling
-    # Hint: torch.rand gives Uniform[0,1]; scale and shift to [-1, 1]
     return torch.rand(batch_size, latent_dim, device = device) * 2 - 1 
 
 # ---------------------------------------------------------------------------
