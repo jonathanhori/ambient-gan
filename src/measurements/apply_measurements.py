@@ -26,6 +26,8 @@ def apply_measurement(images, cfg):
         return block_pixels(images, p=cfg['block_prob'])
     elif cfg['type'] == 'convolve_noise':  # convolve_noise
         return convolve_noise(images, noise_sigma=cfg['noise_sigma'])
+    elif cfg['type'] == 'identity': #identity for testing purposes
+        return images
     else:
         raise ValueError(f"Unknown measurement type: '{cfg['type']}'. "
                          f"Expected 'block_pixels' or 'convolve_noise'.")
