@@ -23,12 +23,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from models.model import Generator, Discriminator, initialize_weights, LATENT_DIM
-# from measurement import apply_measurement  # assumed available
-
-
-def apply_measurement(images, type):
-    # TODO: finish writing in measurement module
-    return images
+from measurements.apply_measurements import apply_measurement  # assumed available
 
 
 # ---------------------------------------------------------------------------

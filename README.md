@@ -5,12 +5,14 @@ We will reproduce Figure 7. This requires implementing a Wasserstein GAN with gr
 
 The AmbientGAN model is benchmarked against alternatives:
 - For Block-Pixels:
-    1. Ignore - learn the model directly on the measurements 
-    2. Unmeasure-blur
-    3. Unmeasure-inpaint-tv
+    1. Ignore: learn the model directly on the measurements
+    2. Unmeasure-blur: invert measurement function through blurring to fill zeros
+    3. Unmeasure-inpaint-tv: invert through total variation inpainting
 - For Convolve+Noise:
     1. Ignore
-    2. Unmeasure-weiner
+    2. Unmeasure-weiner: invert through Wiener deconvolution
+
+![Figure 7 from Bora, Price &Dimakis (2018)](fig7.png) 
 
 Three models must be trained:
 1. Generator: generates samples from $p_x$
