@@ -213,6 +213,33 @@ def train_step(G: nn.Module,
 
 
 # ---------------------------------------------------------------------------
+# Evaluation
+# ---------------------------------------------------------------------------
+
+def evaluate(epoch, G, classifier, losses, results, results_dir, config, n_epochs, device):
+    G.eval()
+    is_mean, is_std = compute_inception_score(
+        G,
+        classifier,
+        n_samples_per_round=config['evaluation']['n_samples_for_is'],
+        device=device
+    )
+    G.train()
+
+    results['epoch'].append(epoch)
+    results['inception_score_mean'].append(float(is_mean))
+    results['inception_score_std'].append(float(is_std))
+
+    print(f"Epoch {epoch}/{n_epochs}  "
+          f"loss_D={losses['loss_D']:.3f}  "
+          f"loss_G={losses['loss_G']:.3f}  "
+          f"IS={is_mean:.2f}±{is_std:.2f}")
+
+    with open(os.path.join(results_dir, 'results.yaml'), 'w') as f:
+        yaml.dump(results, f)
+
+
+# ---------------------------------------------------------------------------
 # Main training loop
 # ---------------------------------------------------------------------------
 
@@ -333,26 +360,8 @@ def train(config: dict) -> None:
 
         # Evaluate
         if epoch % eval_every == 0:
-            G.eval()
-            # TODO: call inception score function here
-            is_mean, is_std = compute_inception_score(
-                G,
-                classifier,
-                n_samples_per_round=config['evaluation']['n_samples_for_is'],
-                device=device
-            )
-
-            results['epoch'].append(epoch)
-            results['inception_score_mean'].append(is_mean)
-            results['inception_score_std'].append(is_std)
-
-            print(f"Epoch {epoch}/{n_epochs}  "
-                  f"loss_D={losses['loss_D']:.3f}  "
-                  f"loss_G={losses['loss_G']:.3f}  "
-                  f"IS={is_mean:.2f}±{is_std:.2f}")
-
-            with open(os.path.join(results_dir, 'results.yaml'), 'w') as f:
-                yaml.dump(results, f)
+            evaluate(epoch, G, classifier, losses, results, results_dir,
+                     config, n_epochs, device)
 
         # Checkpoint
         if epoch % save_every == 0:
@@ -360,6 +369,10 @@ def train(config: dict) -> None:
                        os.path.join(ckpt_dir, f'G_epoch{epoch}.pt'))
             torch.save(D.state_dict(),
                        os.path.join(ckpt_dir, f'D_epoch{epoch}.pt'))
+
+    if n_epochs % eval_every != 0:
+        evaluate(n_epochs, G, classifier, losses, results, results_dir,
+                 config, n_epochs, device)
 
     if n_epochs % save_every != 0:
         torch.save(G.state_dict(), os.path.join(ckpt_dir, f'G_epoch{n_epochs}.pt'))
