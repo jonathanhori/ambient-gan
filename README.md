@@ -38,7 +38,16 @@ evaluation:
 ```
 
 Next, train the model with:
-`python src/train.py --config configs/<config_name>.yaml`
+```python src/train.py --config configs/<config_name>.yaml```
+
+To override config values without editing the file (e.g. for a sweep over block probability):
+```
+python src/train.py --config configs/identity_test.yaml \
+    --override measurement.block_prob=0.9 experiment_name=blockpixels_p09
+```
+
+Checkpoints and a results.yaml containing per-epoch inception scores are saved to `outputs/checkpoints/<experiment_name>/` and `outputs/results/<experiment_name>/`.
+
 
 Trained generators can be evaluated with:
 ```
@@ -46,7 +55,6 @@ python src/models/inception.py --eval \
     --classifier_path ./outputs/classifier.pt \
     --generator_path  ./outputs/checkpoints/<experiment_name>/G_epoch100.pt
 ```
-
 
 The Generator and Discriminator must be trained for each block probability p or noise sd \sigma. The inception model must be only trained once, and the inception score is used to calcuate the inception score:
 
