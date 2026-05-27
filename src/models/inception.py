@@ -29,8 +29,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-from model import Generator, LATENT_DIM
-from utils import sample_latent
+from models.model import Generator, LATENT_DIM
+from models.utils import sample_latent
 
 
 # ---------------------------------------------------------------------------
@@ -228,15 +228,11 @@ def evaluate_classifier(model: MNISTClassifier,
 # ---------------------------------------------------------------------------
 
 
-def _calc_score():
-            # Translate their get_inception_score directly:
-        #
-        #
-        #   p_y = np.mean(p_y_given_x, axis=0)               # marginal (10,)
-        #   terms = p_y_given_x * (np.log(p_y_given_x) - np.log(p_y))
-        #   kl_div = np.mean(np.sum(terms, axis=1))
-        #   score = np.exp(kl_div)
-    return
+def _calc_score(p_y_given_x: np.ndarray) -> float:
+    p_y = np.mean(p_y_given_x, axis=0)               # marginal (10,)
+    terms = p_y_given_x * (np.log(p_y_given_x) - np.log(p_y))
+    kl_div = np.mean(np.sum(terms, axis=1))
+    return float(np.exp(kl_div))
 
 def compute_inception_score(generator: nn.Module,
                              classifier: MNISTClassifier,
@@ -266,7 +262,11 @@ def compute_inception_score(generator: nn.Module,
         (mean_IS, std_IS): mean and std of IS across rounds
     """
     if device is None:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device(
+            'cuda' if torch.cuda.is_available()
+            else 'mps' if torch.backends.mps.is_available()
+            else 'cpu'
+        )
 
     classifier.eval()
     generator.eval()

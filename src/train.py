@@ -24,7 +24,8 @@ from torchvision import datasets, transforms
 
 from models.model import Generator, Discriminator, initialize_weights, LATENT_DIM
 from models.utils import sample_latent
-from measurements.apply_measurements import apply_measurement  # assumed available
+from models.inception import MNISTClassifier, compute_inception_score
+from measurements.apply_measurements import apply_measurement 
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +161,7 @@ def train_step(G: nn.Module,
     real_images = real_images.to(device)
 
     # Apply measurement to real images so D sees real measurements
-    real_measurements = apply_measurement(real_images, type = measurement_cfg['type']) #prob?
+    real_measurements = apply_measurement(real_images, cfg = measurement_cfg) #prob?
 
     # ------------------------------------------------------------------
     # Discriminator updates (n_critic steps)
@@ -173,14 +174,14 @@ def train_step(G: nn.Module,
         fake_images = G(z).detach()
 
         # Apply measurement to fake images
-        fake_measurements = apply_measurement(fake_images, type = measurement_cfg['type'])
+        fake_measurements = apply_measurement(fake_images, cfg = measurement_cfg)
 
         # Compute D scores
         d_real = D(real_measurements)
         d_fake = D(fake_measurements)
 
         # Compute gradient penalty
-        gp = gradient_penalty(D, real_images, fake_images, device = device)
+        gp = gradient_penalty(D, real_measurements, fake_measurements, device = device)
 
         # Compute and backprop D loss
         loss_D = discriminator_loss(d_real, d_fake, gp = gp, lambda_gp = lambda_gp)
@@ -197,7 +198,7 @@ def train_step(G: nn.Module,
     fake_images = G(z)
 
     # Apply measurement
-    fake_measurements = apply_measurement(fake_images, type = measurement_cfg['type'])
+    fake_measurements = apply_measurement(fake_images, cfg = measurement_cfg)
 
     # Compute D score on fake measurements
     d_fake = D(fake_measurements)
@@ -220,7 +221,11 @@ def train(config: dict) -> None:
     Full training loop. Saves checkpoints and results for Person C
     to use for figure generation.
     """
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(
+        'cuda' if torch.cuda.is_available()
+        else 'mps' if torch.backends.mps.is_available()
+        else 'cpu'
+    )
     torch.manual_seed(config['training']['seed'])
 
     # Setup output directories
@@ -257,6 +262,13 @@ def train(config: dict) -> None:
             num_workers=2,
             pin_memory=True
         )
+
+    # ------------------------------------------------------------------
+    # Inception classifier (frozen)
+    # ------------------------------------------------------------------
+    classifier = MNISTClassifier().to(device)
+    classifier.load_state_dict(torch.load(config['evaluation']['classifier_path'], map_location=device))
+    classifier.eval()
 
     # ------------------------------------------------------------------
     # Models
@@ -323,8 +335,12 @@ def train(config: dict) -> None:
         if epoch % eval_every == 0:
             G.eval()
             # TODO: call inception score function here
-            # is_mean, is_std = compute_inception_score(G, n_samples, device)
-            is_mean, is_std = 0.0, 0.0  # replace with actual IS computation
+            is_mean, is_std = compute_inception_score(
+                G,
+                classifier,
+                n_samples_per_round=config['evaluation']['n_samples_for_is'],
+                device=device
+            )
 
             results['epoch'].append(epoch)
             results['inception_score_mean'].append(is_mean)
