@@ -1,0 +1,35 @@
+# configs/identity_test.yaml
+
+experiment_name: identity_test
+
+dataset:
+  name: mnist
+  data_dir: ./data
+  batch_size: 64
+
+measurement:
+  type: identity
+
+model:
+  latent_dim: 128
+
+training:
+  n_epochs: 2           # 25000 iters / 937 batches per epoch
+  lr_g: 0.0002           # from g_lr
+  lr_d: 0.0002           # from d_lr
+  beta1: 0.9             # from opt_param1
+  beta2: 0.999           # from opt_param2
+  n_critic: 1            # from d_iters
+  n_generator: 1         # from g_iters
+  lambda_gp: 10.0        # from gp_lambda
+  save_every_n_epochs: 1
+  seed: 42
+
+evaluation:
+  inception_score_every_n_epochs: 1
+  n_samples_for_is: 5000
+  classifier_path: ./outputs/classifier.pt
+
+output:
+  checkpoint_dir: ./outputs/checkpoints
+  results_dir: ./outputs/results
