@@ -19,6 +19,7 @@ Three models must be trained:
 2. Discriminator: 
 3. Inception model: obtains conditional label distribution $p(y|\bm x)$
 
+## Training
 To train AmbientGAN, first create a config file. The most important fields are:
 ```
 measurement:
@@ -26,7 +27,7 @@ measurement:
   block_prob: 0.5         # for block_pixels
 
 training:
-  n_epochs: 100
+  n_epochs: 27
   n_critic: 5             # D updates per G update (WGAN-GP standard)
   lambda_gp: 10
 
@@ -51,6 +52,7 @@ The Generator and Discriminator must be trained for each block probability p or 
 
 $$IS = \exp\left(\mathbb{E}_{x}\left[KL\left(p(y|x) \ | \ p(y)\right)\right]\right)$$
 
+## Source
 Implementation of the models will build on the code contained from the following sources:
 - https://github.com/igul222/improved_wgan_training (WGANGP)
 - https://github.com/AshishBora/ambient-gan/blob/master/src/mnist/gen/gan_def.py
