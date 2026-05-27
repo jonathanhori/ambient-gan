@@ -130,17 +130,17 @@ def train_step(G: nn.Module,
                lambda_gp: float,
                n_critic: int,
                latent_dim: int,
-               device: torch.device) -> dict:
+               device: torch.device,
+               training_mode: str = 'ambient') -> dict:
     """
     One full training step: n_critic discriminator updates then one
-    generator update. This is the core AmbientGAN training loop.
+    generator update.
 
-    The key difference from standard GAN training:
-      Standard GAN:  D sees real images      vs G(z)
-      AmbientGAN:    D sees real measurements vs f(G(z))
-
-    Note: real_images come in clean from the dataloader. The measurement
-    is applied here, so D never sees a clean image on either side.
+    training_mode controls what D compares:
+      'ambient'  (AmbientGAN): D sees f(real) vs f(G(z))
+      'ignore'   (baseline):   D sees f(real) vs G(z)
+                               G learns the corrupted distribution directly,
+                               ignoring that a measurement was applied.
 
     Args:
         G:               Generator
@@ -153,38 +153,41 @@ def train_step(G: nn.Module,
         n_critic:        number of D updates per G update
         latent_dim:      dimensionality of z
         device:          torch device
+        training_mode:   'ambient' or 'ignore'
 
     Returns:
         dict with keys 'loss_D' and 'loss_G' (floats, for logging)
     """
+    if training_mode not in ('ambient', 'ignore'):
+        raise ValueError(f"Unknown training_mode '{training_mode}'. "
+                         f"Expected 'ambient' or 'ignore'.")
+
     B = real_images.shape[0]
     real_images = real_images.to(device)
 
-    # Apply measurement to real images so D sees real measurements
-    real_measurements = apply_measurement(real_images, cfg = measurement_cfg) #prob?
+    # Both modes: D always sees corrupted real images on the real side
+    real_measurements = apply_measurement(real_images, cfg=measurement_cfg)
 
     # ------------------------------------------------------------------
     # Discriminator updates (n_critic steps)
     # ------------------------------------------------------------------
     for _ in range(n_critic):
 
-        # Sample z and generate fake images
-        # Detach fake_images from G's computation graph for D update
-        z = sample_latent(batch_size = B, latent_dim = latent_dim, device = device)
+        z = sample_latent(batch_size=B, latent_dim=latent_dim, device=device)
         fake_images = G(z).detach()
 
-        # Apply measurement to fake images
-        fake_measurements = apply_measurement(fake_images, cfg = measurement_cfg)
+        # ambient: apply measurement to fakes so both sides are in measurement space
+        # ignore:  compare raw G(z) to corrupted reals — no measurement on fakes
+        if training_mode == 'ambient':
+            fake_for_d = apply_measurement(fake_images, cfg=measurement_cfg)
+        else:
+            fake_for_d = fake_images
 
-        # Compute D scores
         d_real = D(real_measurements)
-        d_fake = D(fake_measurements)
+        d_fake = D(fake_for_d)
+        gp = gradient_penalty(D, real_measurements, fake_for_d, device=device)
 
-        # Compute gradient penalty
-        gp = gradient_penalty(D, real_measurements, fake_measurements, device = device)
-
-        # Compute and backprop D loss
-        loss_D = discriminator_loss(d_real, d_fake, gp = gp, lambda_gp = lambda_gp)
+        loss_D = discriminator_loss(d_real, d_fake, gp=gp, lambda_gp=lambda_gp)
         opt_D.zero_grad()
         loss_D.backward()
         opt_D.step()
@@ -193,17 +196,16 @@ def train_step(G: nn.Module,
     # Generator update (one step)
     # ------------------------------------------------------------------
 
-    # Sample fresh z and generate fake images
-    z = sample_latent(batch_size = B, latent_dim = latent_dim, device = device)
+    z = sample_latent(batch_size=B, latent_dim=latent_dim, device=device)
     fake_images = G(z)
 
-    # Apply measurement
-    fake_measurements = apply_measurement(fake_images, cfg = measurement_cfg)
+    if training_mode == 'ambient':
+        fake_for_g = apply_measurement(fake_images, cfg=measurement_cfg)
+    else:
+        fake_for_g = fake_images
 
-    # Compute D score on fake measurements
-    d_fake = D(fake_measurements)
+    d_fake = D(fake_for_g)
 
-    # Compute and backprop G loss
     loss_G = generator_loss(d_fake)
     opt_G.zero_grad()
     loss_G.backward()
@@ -334,13 +336,14 @@ def train(config: dict) -> None:
     # ------------------------------------------------------------------
     # Training loop
     # ------------------------------------------------------------------
-    n_epochs      = config['training']['n_epochs']
-    n_critic      = config['training']['n_critic']
-    lambda_gp     = config['training']['lambda_gp']
-    latent_dim    = config['model']['latent_dim']
-    eval_every    = config['evaluation']['inception_score_every_n_epochs']
-    save_every    = config['training']['save_every_n_epochs']
+    n_epochs        = config['training']['n_epochs']
+    n_critic        = config['training']['n_critic']
+    lambda_gp       = config['training']['lambda_gp']
+    latent_dim      = config['model']['latent_dim']
+    eval_every      = config['evaluation']['inception_score_every_n_epochs']
+    save_every      = config['training']['save_every_n_epochs']
     measurement_cfg = config['measurement']
+    training_mode   = config['training'].get('training_mode', 'ambient')
 
     for epoch in range(1, n_epochs + 1):
         G.train()
@@ -355,7 +358,8 @@ def train(config: dict) -> None:
                 lambda_gp=lambda_gp,
                 n_critic=n_critic,
                 latent_dim=latent_dim,
-                device=device
+                device=device,
+                training_mode=training_mode,
             )
 
         # Evaluate
