@@ -14,7 +14,7 @@ model:
   latent_dim: 128
 
 training:
-  n_epochs: 2           # 25000 iters / 937 batches per epoch
+  n_epochs: 27           # 25000 iters / 937 batches per epoch
   lr_g: 0.0002           # from g_lr
   lr_d: 0.0002           # from d_lr
   beta1: 0.9             # from opt_param1
@@ -22,11 +22,11 @@ training:
   n_critic: 1            # from d_iters
   n_generator: 1         # from g_iters
   lambda_gp: 10.0        # from gp_lambda
-  save_every_n_epochs: 1
+  save_every_n_epochs: 10
   seed: 42
 
 evaluation:
-  inception_score_every_n_epochs: 1
+  inception_score_every_n_epochs: 10
   n_samples_for_is: 5000
   classifier_path: ./outputs/classifier.pt
 

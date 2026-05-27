@@ -361,6 +361,10 @@ def train(config: dict) -> None:
             torch.save(D.state_dict(),
                        os.path.join(ckpt_dir, f'D_epoch{epoch}.pt'))
 
+    if n_epochs % save_every != 0:
+        torch.save(G.state_dict(), os.path.join(ckpt_dir, f'G_epoch{n_epochs}.pt'))
+        torch.save(D.state_dict(), os.path.join(ckpt_dir, f'D_epoch{n_epochs}.pt'))
+
     print("Training complete.")
 
 
