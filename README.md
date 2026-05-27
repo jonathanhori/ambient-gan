@@ -16,8 +16,36 @@ The AmbientGAN model is benchmarked against alternatives:
 
 Three models must be trained:
 1. Generator: generates samples from $p_x$
-2. Discriminator
+2. Discriminator: 
 3. Inception model: obtains conditional label distribution $p(y|\bm x)$
+
+To train AmbientGAN, first create a config file. The most important fields are:
+```
+measurement:
+  type: block_pixels      # or convolve_noise, identity
+  block_prob: 0.5         # for block_pixels
+
+training:
+  n_epochs: 100
+  n_critic: 5             # D updates per G update (WGAN-GP standard)
+  lambda_gp: 10
+
+evaluation:
+  classifier_path: ./outputs/classifier.pt
+  n_samples_for_is: 5000
+
+```
+
+Next, train the model with:
+`python src/train.py --config configs/<config_name>.yaml`
+
+Trained generators can be evaluated with:
+```
+python src/models/inception.py --eval \
+    --classifier_path ./outputs/classifier.pt \
+    --generator_path  ./outputs/checkpoints/<experiment_name>/G_epoch100.pt
+```
+
 
 The Generator and Discriminator must be trained for each block probability p or noise sd \sigma. The inception model must be only trained once, and the inception score is used to calcuate the inception score:
 
